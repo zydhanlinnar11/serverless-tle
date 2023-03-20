@@ -37,7 +37,9 @@ export default class FutureContestCommand extends SlashCommand {
     params.append('offset', '0')
     params.append('host__regex', FutureContestCommand.HOST_REGEX)
     try {
-      const response = await fetch(`${FutureContestCommand.CLIST_API_URL}?${params.toString()}`)
+      const response = await fetch(`${FutureContestCommand.CLIST_API_URL}?${params.toString()}`, {
+        headers: { Authorization: `ApiKey ${process.env.CLIST_API_TOKEN}` }
+      })
       const data: ClistResponse = await response.json()
       if (!response.ok) throw new Error(JSON.stringify(data))
       return data.objects.map(({ event }) => event).join('\n')

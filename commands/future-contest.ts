@@ -21,6 +21,8 @@ type ClistResponse = {
 export default class FutureContestCommand extends SlashCommand {
   static CLIST_API_URL = 'https://clist.by/api/v2/contest'
   static HOST_REGEX = 'codeforces.com|atcoder.jp'
+  static DATE_LOCALE = 'id-ID'
+  static DATE_TZ = 'Asia/Jakarta'
 
   constructor(creator: SlashCreator) {
     super(creator, {
@@ -36,6 +38,9 @@ export default class FutureContestCommand extends SlashCommand {
     params.append('limit', '5')
     params.append('offset', '0')
     params.append('host__regex', FutureContestCommand.HOST_REGEX)
+    params.append('order_by', 'start')
+    params.append('start__gt', new Date().toISOString())
+
     try {
       const response = await fetch(`${FutureContestCommand.CLIST_API_URL}?${params.toString()}`, {
         headers: { Authorization: `ApiKey ${process.env.CLIST_API_TOKEN}` }
@@ -47,11 +52,20 @@ export default class FutureContestCommand extends SlashCommand {
         title: 'Future Contests',
         fields: data.objects.map(({ event, href, start }) => ({
           name: event,
-          value: `${new Date(start).toLocaleString()} | [Link 🡕](${href})`
+          value: `[Link 🡕](${href}) | ${new Date(start).toLocaleString(FutureContestCommand.DATE_LOCALE, {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            timeZoneName: 'short',
+            timeZone: FutureContestCommand.DATE_TZ
+          })}`
         }))
       }
 
-      ctx.send({ embeds: [embed] })
+      await ctx.send({ embeds: [embed] })
     } catch (e) {
       return 'Sorry, i am currently unable to bring you future contest:( Please try again later!!!'
     }

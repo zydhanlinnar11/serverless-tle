@@ -1,4 +1,4 @@
-import { SlashCommand, SlashCreator } from 'slash-create'
+import { SlashCommand, SlashCreator, MessageEmbed, CommandContext } from 'slash-create'
 
 type ClistContest = {
   duration: number
@@ -30,7 +30,7 @@ export default class FutureContestCommand extends SlashCommand {
     })
   }
 
-  async run() {
+  async run(ctx: CommandContext) {
     const params = new URLSearchParams()
     params.append('format', 'json')
     params.append('limit', '5')
@@ -42,7 +42,16 @@ export default class FutureContestCommand extends SlashCommand {
       })
       const data: ClistResponse = await response.json()
       if (!response.ok) throw new Error(JSON.stringify(data))
-      return data.objects.map(({ event }) => event).join('\n')
+      const embed: MessageEmbed = {
+        type: 'rich',
+        title: 'Future Contests',
+        fields: data.objects.map(({ event, href, start }) => ({
+          name: event,
+          value: `${new Date(start).toLocaleString()} | [Link 🡕](${href})`
+        }))
+      }
+
+      ctx.send({ embeds: [embed] })
     } catch (e) {
       return 'Sorry, i am currently unable to bring you future contest:( Please try again later!!!'
     }

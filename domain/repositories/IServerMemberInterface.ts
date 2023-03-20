@@ -1,0 +1,8 @@
+import { ServerMember } from '../entities/ServerMember'
+import { ServerId } from '../valueobjects/ServerId'
+import { ServerMemberId } from '../valueobjects/ServerMemberId'
+
+export interface IServerMemberInterface {
+  find: (serverId: ServerId, memberId: ServerMemberId) => Promise<ServerMember | null>
+  update: (serverMember: ServerMember) => Promise<void>
+}

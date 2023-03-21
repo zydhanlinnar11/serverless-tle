@@ -1,11 +1,5 @@
 import nacl from 'tweetnacl'
 import { Buffer } from 'buffer'
-import {
-  InteractionCallbackType,
-  InteractionObject,
-  InteractionResponse,
-  InteractionType
-} from '@/types/discord'
 import { initializeApp } from 'firebase/app'
 import { getFirestore, addDoc, collection } from 'firebase/firestore'
 
@@ -49,7 +43,7 @@ export default async (req: Request) => {
 
   const signature = req.headers.get('X-Signature-Ed25519')
   const timestamp = req.headers.get('X-Signature-Timestamp')
-  const body: InteractionObject = await req.json()
+  const body = await req.json()
 
   if (!signature || !timestamp || !body)
     return new Response(
@@ -75,13 +69,13 @@ export default async (req: Request) => {
       }
     )
 
-  if (body.type === InteractionType.PING)
+  if (body.type === 1)
     return new Response(JSON.stringify({ type: 1 }), {
       headers: { 'Content-Type': 'application/json' }
     })
 
-  const interactionResponse: InteractionResponse = {
-    type: InteractionCallbackType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
+  const interactionResponse = {
+    type: 5,
     data: {}
   }
   await addDoc(collection(db, 'interactions'), body)

@@ -1,5 +1,12 @@
 import nacl from 'tweetnacl'
 import { Buffer } from 'buffer'
+import {
+  InteractionCallbackType,
+  InteractionObject,
+  InteractionResponse,
+  InteractionType
+} from '@/types/discord'
+import { handleInteraction } from '@/commands/InteractionHandler'
 
 export const config = {
   runtime: 'edge',
@@ -13,6 +20,7 @@ export const isDevelopment = () => getApplicationEnvironment() === 'development'
 export default async (req: Request) => {
   if (req.method !== 'POST')
     return new Response(JSON.stringify({ message: 'method not allowed!' }), {
+      headers: { 'Content-Type': 'application/json' },
       status: 405
     })
 
@@ -25,18 +33,22 @@ export default async (req: Request) => {
           : 'internal server error'
       }),
       {
+        headers: { 'Content-Type': 'application/json' },
         status: 500
       }
     )
 
   const signature = req.headers.get('X-Signature-Ed25519')
   const timestamp = req.headers.get('X-Signature-Timestamp')
-  const body = await req.json()
+  const body: InteractionObject = await req.json()
 
   if (!signature || !timestamp || !body)
     return new Response(
       JSON.stringify({ message: 'missing request signature' }),
-      { status: 401 }
+      {
+        headers: { 'Content-Type': 'application/json' },
+        status: 401
+      }
     )
 
   const isVerified = nacl.sign.detached.verify(
@@ -48,9 +60,22 @@ export default async (req: Request) => {
   if (!isVerified)
     return new Response(
       JSON.stringify({ message: 'invalid request signature' }),
-      { status: 401 }
+      {
+        headers: { 'Content-Type': 'application/json' },
+        status: 401
+      }
     )
 
-  if (body.type === 1)
-    return new Response(JSON.stringify({ type: 1 }), { status: 200 })
+  if (body.type === InteractionType.PING)
+    return new Response(JSON.stringify({ type: 1 }), {
+      headers: { 'Content-Type': 'application/json' }
+    })
+
+  const interactionResponse: InteractionResponse = {
+    type: InteractionCallbackType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
+    data: {}
+  }
+  return new Response(JSON.stringify(interactionResponse), {
+    headers: { 'Content-Type': 'application/json' }
+  })
 }

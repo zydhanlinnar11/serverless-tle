@@ -1,4 +1,9 @@
-import { SlashCommand, SlashCreator, MessageEmbed, CommandContext } from 'slash-create'
+import {
+  SlashCommand,
+  SlashCreator,
+  MessageEmbed,
+  CommandContext
+} from 'slash-create'
 
 type ClistContest = {
   duration: number
@@ -42,9 +47,12 @@ export default class FutureContestCommand extends SlashCommand {
     params.append('start__gt', new Date().toISOString())
 
     try {
-      const response = await fetch(`${FutureContestCommand.CLIST_API_URL}?${params.toString()}`, {
-        headers: { Authorization: `ApiKey ${process.env.CLIST_API_TOKEN}` }
-      })
+      const response = await fetch(
+        `${FutureContestCommand.CLIST_API_URL}?${params.toString()}`,
+        {
+          headers: { Authorization: `ApiKey ${process.env.CLIST_API_TOKEN}` }
+        }
+      )
       const data: ClistResponse = await response.json()
       if (!response.ok) throw new Error(JSON.stringify(data))
       const embed: MessageEmbed = {
@@ -52,16 +60,19 @@ export default class FutureContestCommand extends SlashCommand {
         title: 'Future Contests',
         fields: data.objects.map(({ event, href, start }) => ({
           name: event,
-          value: `[Link 🡕](${href}) | ${new Date(start).toLocaleString(FutureContestCommand.DATE_LOCALE, {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: 'numeric',
-            timeZoneName: 'short',
-            timeZone: FutureContestCommand.DATE_TZ
-          })}`
+          value: `[Link 🡕](${href}) | ${new Date(start).toLocaleString(
+            FutureContestCommand.DATE_LOCALE,
+            {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: 'numeric',
+              timeZoneName: 'short',
+              timeZone: FutureContestCommand.DATE_TZ
+            }
+          )}`
         }))
       }
 

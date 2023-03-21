@@ -1,5 +1,6 @@
 import { CodeforcesHandleChangeRequested } from '../events/CodeforcesHandleChangeRequested'
 import { IDomainEvent } from '../events/IDomainEvent'
+import { ICodeforcesService } from '../services/ICodeforcesService'
 import { CodeforcesHandle } from '../valueobjects/CodeforcesHandle'
 import { ServerId } from '../valueobjects/ServerId'
 import { ServerMemberId } from '../valueobjects/ServerMemberId'
@@ -24,13 +25,17 @@ export class ServerMember {
     this.domainEvents = []
   }
 
-  public requestHandleChange = (newHandle: CodeforcesHandle) => {
+  public requestHandleChange = async (
+    newHandle: CodeforcesHandle,
+    codeforcesService: ICodeforcesService
+  ) => {
     if (this.handle?.equals(newHandle)) return
     const event = new CodeforcesHandleChangeRequested(
       this.getServerId(),
       this.getId(),
       this.getHandle(),
-      newHandle
+      newHandle,
+      await codeforcesService.getRandomCodeforcesProblem()
     )
     this.domainEvents.push(event)
   }

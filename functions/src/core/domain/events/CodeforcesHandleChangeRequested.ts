@@ -1,3 +1,4 @@
+import { CodeforcesProblem } from '../services/ICodeforcesService'
 import { CodeforcesHandle } from '../valueobjects/CodeforcesHandle'
 import { ServerId } from '../valueobjects/ServerId'
 import { ServerMemberId } from '../valueobjects/ServerMemberId'
@@ -10,7 +11,8 @@ export class CodeforcesHandleChangeRequested implements IDomainEvent {
     public readonly serverId: ServerId,
     public readonly serverMemberId: ServerMemberId,
     public readonly oldHandle: CodeforcesHandle | null,
-    public readonly newHandle: CodeforcesHandle
+    public readonly newHandle: CodeforcesHandle,
+    public readonly problem: CodeforcesProblem
   ) {}
 
   toJSONString: () => string = () =>
@@ -19,7 +21,8 @@ export class CodeforcesHandleChangeRequested implements IDomainEvent {
       server_id: this.serverId.toString(),
       server_member_id: this.serverMemberId.toString(),
       old_handle: this.oldHandle?.toString() ?? null,
-      new_handle: this.newHandle?.toString() ?? null
+      new_handle: this.newHandle?.toString() ?? null,
+      problem: this.problem
     })
 
   getEventType = () => CodeforcesHandleChangeRequested.EVENT_TYPE

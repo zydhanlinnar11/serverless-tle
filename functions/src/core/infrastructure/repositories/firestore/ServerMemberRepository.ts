@@ -4,10 +4,11 @@ import { ServerId } from '../../../domain/valueobjects/ServerId'
 import { ServerMemberId } from '../../../domain/valueobjects/ServerMemberId'
 import { firestore } from './db'
 import { FieldValue } from '@google-cloud/firestore'
+import { CodeforcesHandleChangeRequested } from '../../../domain/events/CodeforcesHandleChangeRequested'
 
 export class ServerMemberRepository implements IServerMemberRepository {
   static SERVER_MEMBER_COLLECTION = 'server_members'
-  static DOMAIN_EVENT_COLLECTION = 'domain_events'
+  static HANDLE_IDENTIFY_REQUEST_COLLECTION = 'handle_identify_requests'
 
   private getDocRef = (serverId: ServerId, memberId: ServerMemberId) =>
     firestore
@@ -69,11 +70,12 @@ export class ServerMemberRepository implements IServerMemberRepository {
         { merge: true }
       )
       const events = serverMember.getUnpublishedEvents()
-      events.forEach((event) => {
-        const eventRef = firestore
-          .collection(ServerMemberRepository.DOMAIN_EVENT_COLLECTION)
-          .doc()
+      events.forEach(async (event) => {
         const eventData = JSON.parse(event.toJSONString())
+        if (!(event instanceof CodeforcesHandleChangeRequested)) return
+        const eventRef = firestore
+          .collection(ServerMemberRepository.HANDLE_IDENTIFY_REQUEST_COLLECTION)
+          .doc()
         transaction.set(eventRef, {
           ...eventData,
           interaction_token: interactionToken,

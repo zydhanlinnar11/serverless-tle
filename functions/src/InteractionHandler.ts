@@ -1,8 +1,12 @@
 import { AbstractCommand } from './core/commands/AbstractCommand'
 import FutureContestCommand from './core/commands/FutureContestCommand'
+import IdentifyHandleCommand from './core/commands/IdentifyHandleCommand'
 import { InteractionCallbackData, InteractionObject } from './types/discord'
 
-const commands: AbstractCommand[] = [new FutureContestCommand()]
+const commands: AbstractCommand[] = [
+  new FutureContestCommand(),
+  new IdentifyHandleCommand()
+]
 
 export const handleInteraction: (
   interaction: InteractionObject

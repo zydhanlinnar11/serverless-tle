@@ -47,6 +47,17 @@ export default class FutureContestCommand extends SlashCommand {
     params.append('start__gt', new Date().toISOString())
 
     try {
+      console.log(
+        fetch(`${FutureContestCommand.CLIST_API_URL}?${params.toString()}`, {
+          headers: { Authorization: `ApiKey ${process.env.CLIST_API_TOKEN}` }
+        })
+      )
+      fetch(`${FutureContestCommand.CLIST_API_URL}?${params.toString()}`, {
+        headers: { Authorization: `ApiKey ${process.env.CLIST_API_TOKEN}` }
+      })
+        .then((asu) => console.log(asu))
+        .catch((asu) => console.log(asu))
+        .finally(() => console.log('done'))
       const response = await fetch(
         `${FutureContestCommand.CLIST_API_URL}?${params.toString()}`,
         {

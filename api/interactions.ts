@@ -1,6 +1,5 @@
 // This is ran upon interaction
 
-import 'reflect-metadata'
 import { SlashCreator, VercelServer } from 'slash-create'
 import path from 'path'
 
@@ -12,7 +11,7 @@ export const creator = new SlashCreator({
 
 creator
   .withServer(new VercelServer())
-  .registerCommandsIn(path.join(__dirname, '..', 'commands'))
+  .registerCommandsIn(path.join(__dirname, '..', 'commands'), ['.ts'])
 
 creator.on('warn', (message) => console.warn(message))
 creator.on('error', (error) => console.error(error))

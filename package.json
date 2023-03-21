@@ -13,6 +13,7 @@
   "dependencies": {
     "@google-cloud/firestore": "^6.5.0",
     "buffer": "^6.0.3",
+    "firebase": "^9.18.0",
     "tweetnacl": "^1.0.3"
   },
   "devDependencies": {

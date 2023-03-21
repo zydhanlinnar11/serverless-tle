@@ -6,7 +6,16 @@ import {
   InteractionResponse,
   InteractionType
 } from '@/types/discord'
-import { handleInteraction } from '@/commands/InteractionHandler'
+import { initializeApp } from 'firebase/app'
+import { getFirestore, addDoc, collection } from 'firebase/firestore'
+
+const firebaseApp = initializeApp({
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.FIRESTORE_PROJECT_ID
+})
+
+const db = getFirestore(firebaseApp)
 
 export const config = {
   runtime: 'edge',
@@ -75,6 +84,7 @@ export default async (req: Request) => {
     type: InteractionCallbackType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
     data: {}
   }
+  await addDoc(collection(db, 'interactions'), body)
   return new Response(JSON.stringify(interactionResponse), {
     headers: { 'Content-Type': 'application/json' }
   })

@@ -13,5 +13,14 @@ export class CodeforcesHandleChangeRequested implements IDomainEvent {
     public readonly newHandle: CodeforcesHandle
   ) {}
 
+  toJSONString: () => string = () =>
+    JSON.stringify({
+      type: CodeforcesHandleChangeRequested.EVENT_TYPE,
+      server_id: this.serverId.toString(),
+      server_member_id: this.serverMemberId.toString(),
+      old_handle: this.oldHandle?.toString() ?? null,
+      new_handle: this.newHandle?.toString() ?? null
+    })
+
   getEventType = () => CodeforcesHandleChangeRequested.EVENT_TYPE
 }

@@ -3,9 +3,11 @@ import { IServerMemberRepository } from '../../../domain/repositories/IServerMem
 import { ServerId } from '../../../domain/valueobjects/ServerId'
 import { ServerMemberId } from '../../../domain/valueobjects/ServerMemberId'
 import { firestore } from './db'
+import { FieldValue } from '@google-cloud/firestore'
 
 export class ServerMemberRepository implements IServerMemberRepository {
   static SERVER_MEMBER_COLLECTION = 'server_members'
+  static DOMAIN_EVENT_COLLECTION = 'domain_events'
 
   private getDocRef = (serverId: ServerId, memberId: ServerMemberId) =>
     firestore
@@ -41,21 +43,45 @@ export class ServerMemberRepository implements IServerMemberRepository {
     )
   }
 
-  update: (serverMember: ServerMember) => Promise<void> = async (
-    serverMember
+  update: (
+    serverMember: ServerMember,
+    applicationId: string,
+    interactionToken: string
+  ) => Promise<void> = async (
+    serverMember,
+    applicationId,
+    interactionToken
   ) => {
-    const serverMemberRef = this.getDocRef(
-      serverMember.getServerId(),
-      serverMember.getId()
-    )
-    await serverMemberRef.set(
-      {
-        codeforces: {
-          handle: serverMember.getHandle(),
-          handle_verified: serverMember.isHandleVerified()
-        }
-      },
-      { merge: true }
-    )
+    await firestore.runTransaction(async (transaction) => {
+      const serverMemberRef = this.getDocRef(
+        serverMember.getServerId(),
+        serverMember.getId()
+      )
+
+      transaction.set(
+        serverMemberRef,
+        {
+          codeforces: {
+            handle: serverMember.getHandle(),
+            handle_verified: serverMember.isHandleVerified()
+          }
+        },
+        { merge: true }
+      )
+      const events = serverMember.getUnpublishedEvents()
+      events.forEach((event) => {
+        const eventRef = firestore
+          .collection(ServerMemberRepository.DOMAIN_EVENT_COLLECTION)
+          .doc()
+        const eventData = JSON.parse(event.toJSONString())
+        transaction.set(eventRef, {
+          ...eventData,
+          interaction_token: interactionToken,
+          application_id: applicationId,
+          timestamp: FieldValue.serverTimestamp()
+        })
+      })
+      serverMember.clearUnpublishedEvents()
+    })
   }
 }

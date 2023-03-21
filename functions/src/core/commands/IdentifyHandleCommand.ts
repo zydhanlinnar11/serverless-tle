@@ -13,7 +13,6 @@ import { AbstractCommand } from './AbstractCommand'
 
 export default class IdentifyHandleCommand extends AbstractCommand {
   private serverMemberRepository: IServerMemberRepository
-  // private eventEmitter: EventEmitter
   static COMMAND_NAME = 'identify-handle'
   static COMMAND_DESCRIPTION = 'Identify your codeforces handle.'
   static COMMAND_OPTIONS = [
@@ -28,7 +27,6 @@ export default class IdentifyHandleCommand extends AbstractCommand {
   constructor() {
     super()
     this.serverMemberRepository = serverMemberRepository
-    // this.eventEmitter = container.get<EventEmitter>(TYPES.EventEmitter)
   }
 
   public getName: () => string = () => IdentifyHandleCommand.COMMAND_NAME
@@ -64,16 +62,18 @@ export default class IdentifyHandleCommand extends AbstractCommand {
       const codeforcesHandle = new CodeforcesHandle(handle)
       serverMember.requestHandleChange(codeforcesHandle)
 
-      await this.serverMemberRepository.update(serverMember)
-      return { content: 'Searching for problems...' }
+      await this.serverMemberRepository.update(
+        serverMember,
+        interaction.application_id,
+        interaction.token
+      )
+      return {
+        content:
+          "Please wait while i'm searching a problem for verifying your Codeforces handle..."
+      }
     } catch (e) {
       console.error(e)
       return { content: 'Unable to identify codeforces handle!' }
     }
-    // const events = serverMember.getUnpublishedEvents()
-    // events.forEach((event) => {
-    //   this.eventEmitter.emit(event.getEventType(), event)
-    // })
-    // serverMember.clearUnpublishedEvents()
   }
 }

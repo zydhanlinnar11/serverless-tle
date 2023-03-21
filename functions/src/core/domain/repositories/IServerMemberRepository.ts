@@ -7,5 +7,9 @@ export interface IServerMemberRepository {
     serverId: ServerId,
     memberId: ServerMemberId
   ) => Promise<ServerMember | null>
-  update: (serverMember: ServerMember) => Promise<void>
+  update: (
+    serverMember: ServerMember,
+    applicationId: string,
+    interactionToken: string
+  ) => Promise<void>
 }

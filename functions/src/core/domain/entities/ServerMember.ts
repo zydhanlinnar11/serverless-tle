@@ -1,4 +1,5 @@
 import { CodeforcesHandleChangeRequested } from '../events/CodeforcesHandleChangeRequested'
+import { CodeforcesHandleVerified } from '../events/CodeforcesHandleVerified'
 import { IDomainEvent } from '../events/IDomainEvent'
 import { ICodeforcesService } from '../services/ICodeforcesService'
 import { CodeforcesHandle } from '../valueobjects/CodeforcesHandle'
@@ -42,6 +43,12 @@ export class ServerMember {
 
   public setHandleAndMarkAsVerified = (handle: CodeforcesHandle) => {
     this.handle = handle
-    this.handleVerified = false
+    this.handleVerified = true
+    const event = new CodeforcesHandleVerified(
+      this.getServerId(),
+      this.getId(),
+      handle
+    )
+    this.domainEvents.push(event)
   }
 }

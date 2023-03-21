@@ -1,10 +1,14 @@
 import { ServerMember } from '../../../domain/entities/ServerMember'
-import { IServerMemberRepository } from '../../../domain/repositories/IServerMemberRepository'
+import {
+  CodeforcesHandleChangeRequest,
+  IServerMemberRepository
+} from '../../../domain/repositories/IServerMemberRepository'
 import { ServerId } from '../../../domain/valueobjects/ServerId'
 import { ServerMemberId } from '../../../domain/valueobjects/ServerMemberId'
 import { firestore } from './db'
-import { FieldValue } from '@google-cloud/firestore'
+import { FieldValue, Transaction, Timestamp } from '@google-cloud/firestore'
 import { CodeforcesHandleChangeRequested } from '../../../domain/events/CodeforcesHandleChangeRequested'
+import { CodeforcesHandleVerified } from '../../../domain/events/CodeforcesHandleVerified'
 
 export class ServerMemberRepository implements IServerMemberRepository {
   static SERVER_MEMBER_COLLECTION = 'server_members'
@@ -44,14 +48,8 @@ export class ServerMemberRepository implements IServerMemberRepository {
     )
   }
 
-  update: (
-    serverMember: ServerMember,
-    applicationId: string,
-    interactionToken: string
-  ) => Promise<void> = async (
-    serverMember,
-    applicationId,
-    interactionToken
+  update: (serverMember: ServerMember) => Promise<void> = async (
+    serverMember
   ) => {
     await firestore.runTransaction(async (transaction) => {
       const serverMemberRef = this.getDocRef(
@@ -70,20 +68,73 @@ export class ServerMemberRepository implements IServerMemberRepository {
         { merge: true }
       )
       const events = serverMember.getUnpublishedEvents()
-      events.forEach(async (event) => {
-        const eventData = JSON.parse(event.toJSONString())
-        if (!(event instanceof CodeforcesHandleChangeRequested)) return
-        const eventRef = firestore
-          .collection(ServerMemberRepository.HANDLE_IDENTIFY_REQUEST_COLLECTION)
-          .doc()
-        transaction.set(eventRef, {
-          ...eventData,
-          interaction_token: interactionToken,
-          application_id: applicationId,
-          timestamp: FieldValue.serverTimestamp()
-        })
-      })
+      for (let i = 0; i < events.length; i++) {
+        const event = events[i]
+        if (event instanceof CodeforcesHandleChangeRequested)
+          this.handleCodeforcesHandleChangeRequestedEvent(transaction, event)
+        if (event instanceof CodeforcesHandleVerified)
+          await this.handleCodeforcesHandleVerifiedEvent(transaction, event)
+      }
       serverMember.clearUnpublishedEvents()
     })
+  }
+
+  private handleCodeforcesHandleChangeRequestedEvent(
+    transaction: Transaction,
+    event: CodeforcesHandleChangeRequested
+  ) {
+    const eventData = JSON.parse(event.toJSONString())
+    const eventRef = firestore
+      .collection(ServerMemberRepository.HANDLE_IDENTIFY_REQUEST_COLLECTION)
+      .doc()
+    transaction.set(eventRef, {
+      ...eventData,
+      timestamp: FieldValue.serverTimestamp(),
+      valid: true
+    })
+  }
+
+  private handleCodeforcesHandleVerifiedEvent: (
+    transaction: Transaction,
+    event: CodeforcesHandleVerified
+  ) => Promise<void> = async (transaction, event) => {
+    const requests = await firestore
+      .collection(ServerMemberRepository.HANDLE_IDENTIFY_REQUEST_COLLECTION)
+      .where('valid', '==', true)
+      .where('server_id', '==', event.serverId.toString())
+      .where('server_member_id', '==', event.serverMemberId.toString())
+      .get()
+
+    requests.forEach((request) => {
+      transaction.update(request.ref, {
+        valid: false
+      })
+    })
+  }
+
+  findLatestCodeforcesHandleChangeRequest: (
+    serverMember: ServerMember
+  ) => Promise<CodeforcesHandleChangeRequest | null> = async (serverMember) => {
+    const requests = await firestore
+      .collection(ServerMemberRepository.HANDLE_IDENTIFY_REQUEST_COLLECTION)
+      .where('valid', '==', true)
+      .where('server_id', '==', serverMember.getServerId().toString())
+      .where('server_member_id', '==', serverMember.getId().toString())
+      .orderBy('timestamp', 'desc')
+      .limit(1)
+      .get()
+
+    let request: CodeforcesHandleChangeRequest | null = null
+
+    requests.forEach((snap) => {
+      const data = snap.data()
+      request = {
+        newHandle: data.new_handle,
+        problem: data.problem,
+        timestamp: (data.timestamp as Timestamp).toDate()
+      }
+    })
+
+    return request
   }
 }

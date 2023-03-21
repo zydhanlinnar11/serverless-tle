@@ -18,6 +18,7 @@ import { CodeforcesHandle } from '../domain/valueobjects/CodeforcesHandle'
 import { ServerId } from '../domain/valueobjects/ServerId'
 import { ServerMemberId } from '../domain/valueobjects/ServerMemberId'
 import { AbstractCommand } from './AbstractCommand'
+import VerifyHandleCommand from './VerifyHandleCommand'
 
 export default class IdentifyHandleCommand extends AbstractCommand {
   private serverMemberRepository: IServerMemberRepository
@@ -69,6 +70,16 @@ export default class IdentifyHandleCommand extends AbstractCommand {
       const serverMember =
         (await this.serverMemberRepository.find(serverId, serverMemberId)) ??
         new ServerMember(serverMemberId, serverId)
+
+      const existingCodeforcesHandleChangeRequest =
+        await this.serverMemberRepository.findLatestCodeforcesHandleChangeRequest(
+          serverMember
+        )
+      if (existingCodeforcesHandleChangeRequest)
+        return {
+          content: `Please finish your current handle identification for ${existingCodeforcesHandleChangeRequest.newHandle}!`
+        }
+
       const codeforcesHandle = new CodeforcesHandle(handle)
       await serverMember.requestHandleChange(
         codeforcesHandle,
@@ -83,11 +94,7 @@ export default class IdentifyHandleCommand extends AbstractCommand {
         problem = event.problem
         break
       }
-      await this.serverMemberRepository.update(
-        serverMember,
-        interaction.application_id,
-        interaction.token
-      )
+      await this.serverMemberRepository.update(serverMember)
 
       if (problem === null)
         return {
@@ -96,7 +103,9 @@ export default class IdentifyHandleCommand extends AbstractCommand {
         }
 
       return {
-        content: `Submit a compile error to https://codeforces.com/contest/${problem.contestId}/problem/${problem.index}`
+        content: `Submit a compile error to ${this.codeforcesService.getProblemUrl(
+          problem
+        )} then use ${VerifyHandleCommand.COMMAND_NAME} command!`
       }
     } catch (e) {
       console.error(e)
